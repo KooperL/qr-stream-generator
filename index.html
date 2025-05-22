@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>File Upload</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 600px;
+            margin: 40px auto;
+            padding: 20px;
+        }
+        .upload-container {
+            border: 2px dashed #ccc;
+            padding: 20px;
+            text-align: center;
+            border-radius: 8px;
+        }
+        input[type="file"] {
+            margin: 20px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="upload-container">
+        <h2>File Upload</h2>
+        <form id="uploadForm">
+            <input type="file" id="fileInput" name="file">
+        </form>
+    </div>
+
+    <script>
+        const fileInput = document.getElementById('fileInput');
+        
+        fileInput.addEventListener('change', (event) => {
+            const file = event.target.files[0];
+            if (file) {
+                console.log('Selected file:', {
+                    name: file.name,
+                    type: file.type,
+                    size: file.size + ' bytes'
+                });
+            }
+        });
+    </script>
+</body>
+</html> 
