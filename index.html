@@ -33,7 +33,55 @@
     <script>
         const fileInput = document.getElementById('fileInput');
         
-        fileInput.addEventListener('change', (event) => {
+        // Function to calculate a simple checksum
+        function calculateChecksum(data) {
+            let sum = 0;
+            for (let i = 0; i < data.length; i++) {
+                sum += data.charCodeAt(i);
+            }
+            return sum.toString(16).padStart(8, '0');
+        }
+
+        // Function to create frame objects
+        async function createFrames(file) {
+            const CHUNK_SIZE = 1000; // Adjust this based on QR code capacity
+            const frames = [];
+            const totalBytes = file.size;
+            
+            // Read file as ArrayBuffer
+            const buffer = await file.arrayBuffer();
+            const data = new Uint8Array(buffer);
+            
+            // Calculate total frames needed
+            const totalFrames = Math.ceil(data.length / CHUNK_SIZE);
+            
+            // Create header frame
+            const headerFrame = {
+                version: 1,
+                totalFrames: totalFrames,
+                totalBytes: totalBytes,
+                checksum: calculateChecksum(String.fromCharCode.apply(null, data))
+            };
+            frames.push(headerFrame);
+            
+            // Create data frames
+            for (let i = 0; i < totalFrames; i++) {
+                const start = i * CHUNK_SIZE;
+                const end = Math.min(start + CHUNK_SIZE, data.length);
+                const chunk = data.slice(start, end);
+                
+                const frame = {
+                    frameNumber: i + 1,
+                    data: String.fromCharCode.apply(null, chunk),
+                    length: chunk.length
+                };
+                frames.push(frame);
+            }
+            
+            return frames;
+        }
+        
+        fileInput.addEventListener('change', async (event) => {
             const file = event.target.files[0];
             if (file) {
                 console.log('Selected file:', {
@@ -41,6 +89,13 @@
                     type: file.type,
                     size: file.size + ' bytes'
                 });
+                
+                try {
+                    const frames = await createFrames(file);
+                    console.log('Generated frames:', frames);
+                } catch (error) {
+                    console.error('Error processing file:', error);
+                }
             }
         });
     </script>
