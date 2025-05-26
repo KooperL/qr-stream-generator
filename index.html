@@ -32,6 +32,9 @@
             width: 100px;
             margin: 0 10px;
         }
+        .controls select {
+            margin: 0 10px;
+        }
         #videoContainer {
             margin-top: 20px;
         }
@@ -53,6 +56,13 @@
         <div class="controls">
             <label for="fps">Frames per second:</label>
             <input type="number" id="fps" value="5" min="1" max="30">
+            <label for="correctionLevel">Error Correction:</label>
+            <select id="correctionLevel">
+                <option value="L">Low (7%)</option>
+                <option value="M">Medium (15%)</option>
+                <option value="Q">Quartile (25%)</option>
+                <option value="H" selected>High (30%)</option>
+            </select>
             <button id="generateVideo">Generate Video</button>
         </div>
         <div id="qrcode-container"></div>
@@ -64,6 +74,7 @@
         const fileInput = document.getElementById('fileInput');
         const errorMessage = document.getElementById('errorMessage');
         const fpsInput = document.getElementById('fps');
+        const correctionLevelSelect = document.getElementById('correctionLevel');
         const generateVideoBtn = document.getElementById('generateVideo');
         const canvas = document.getElementById('canvas');
         const ctx = canvas.getContext('2d');
@@ -80,8 +91,20 @@
             return sum.toString(16).padStart(8, '0');
         }
 
+        function getChunkSize(correctionLevel) {
+            // These sizes are approximate and may need adjustment based on testing
+            switch(correctionLevel) {
+                case 'L': return 300;  // Low correction = more data
+                case 'M': return 250;  // Medium correction
+                case 'Q': return 200;  // Quartile correction
+                case 'H': return 150;  // High correction = less data
+                default: return 150;
+            }
+        }
+
         async function createFrames(file) {
-            const CHUNK_SIZE = 1000; // Adjust this based on QR code capacity
+            const correctionLevel = correctionLevelSelect.value;
+            const CHUNK_SIZE = getChunkSize(correctionLevel);
             const frames = [];
             const totalBytes = file.size;
             
@@ -95,7 +118,7 @@
                 totalFrames: totalFrames,
                 totalBytes: totalBytes,
                 filename: file.name,
-                checksum: calculateChecksum(String.fromCharCode.apply(null, data))
+                checksum: 123 //calculateChecksum(String.fromCharCode.apply(null, data))
             };
             frames.push(headerFrame);
             
@@ -129,7 +152,7 @@
                     height: 256,
                     colorDark: "#000000",
                     colorLight: "#ffffff",
-                    correctLevel: QRCode.CorrectLevel.H
+                    correctLevel: QRCode.CorrectLevel[correctionLevelSelect.value]
                 });
 
                 // Wait for QR code to be generated
@@ -185,6 +208,7 @@
 
             // Draw frames
             for (let i = 0; i < frames.length; i++) {
+                console.log('Generating frame:', frames[i]);
                 const qrCode = await generateQRCode(frames[i]);
                 ctx.clearRect(0, 0, canvas.width, canvas.height);
                 ctx.drawImage(qrCode, 0, 0, canvas.width, canvas.height);
@@ -213,7 +237,7 @@
                     type: file.type,
                     size: file.size + ' bytes'
                 });
-                
+                // console.log(file);
                 try {
                     frames = await createFrames(file);
                     console.log('Generated frames:', frames);
