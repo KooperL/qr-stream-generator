@@ -1,5 +1,6 @@
 const QRCode = require('qrcode')
-
+const fs = require('fs');
+const path = require('path');
 // Utility functions
 const QRUtils = {
     calculateChecksum(data) {
@@ -25,7 +26,7 @@ const QRUtils = {
         const frames = [];
         const totalBytes = file.size;
         
-        const buffer = await file.arrayBuffer();
+        const buffer = await file.arrayBuffer;
         const data = new Uint8Array(buffer);
         
         const totalFrames = Math.ceil(data.length / CHUNK_SIZE);
@@ -59,34 +60,8 @@ const QRUtils = {
 
     async generateQRCodeFromFrames(frame, correctionLevel) {
         return new Promise((resolve) => {
-            const qrFrameNode = document.createElement('div');
-            qrFrameNode.style.display = 'none';
-            document.body.appendChild(qrFrameNode);
-            
-            const qrcode = new QRCode(qrFrameNode, {
-                text: JSON.stringify(frame),
-                width: 256,
-                height: 256,
-                colorDark: "#000000",
-                colorLight: "#ffffff",
-                correctLevel: QRCode.CorrectLevel[correctionLevel]
-            });
-
-            setTimeout(() => {
-                const img = qrFrameNode.querySelector('img');
-                resolve(img);
-                document.body.removeChild(qrFrameNode);
-            }, 100);
-        });
-    },
-    async generateQRCodeFromFrames(frame, correctionLevel) {
-        return new Promise((resolve) => {
-            const qrFrameNode = document.createElement('div');
-            qrFrameNode.style.display = 'none';
-            document.body.appendChild(qrFrameNode);
-            
             const opts = {
-                errorCorrectionLevel: QRCode.CorrectLevel[correctionLevel],
+                errorCorrectionLevel: correctionLevel,
                 type: 'terminal',
                 quality: 0.3,
                 margin: 1,
@@ -95,16 +70,6 @@ const QRUtils = {
                   light:"#FFBF60FF"
                 }
             }
-            // const qrcode = new QRCode(qrFrameNode, {
-            //     text: ,
-            //     width: 256,
-            //     height: 256,
-            //     colorDark: "#000000",
-            //     colorLight: "#ffffff",
-            //     correctLevel: QRCode.CorrectLevel[correctionLevel]
-            // });
-
-
             QRCode.toString(JSON.stringify(frame), opts, function (err, url) {
                 if (err) {
                     return resolve(null)
@@ -115,13 +80,21 @@ const QRUtils = {
     }
 }
 
-const fileInput = process.argv[0]
-const correctionLevel = process.argv[1] ?? 'H'
+const fileInput = process.argv[2]
+const correctionLevel = process.argv[3] ?? 'H'
 
-(async () => {
-const frames = await QRUtils.createFrames(fileInput, correctionLevel)
+async function main() {
+    const filePath = path.resolve(__dirname, fileInput)
+    const file = {
+        arrayBuffer: fs.readFileSync(filePath),
+        name: fileInput,
+        size: fs.statSync(filePath).size
+    }
+    const frames = await QRUtils.createFrames(file, correctionLevel)
     for (let i = 0; i < frames.length; i++) {
         const qrCode = await QRUtils.generateQRCodeFromFrames(frames[i], correctionLevel)
-        console.log('qrCode', qrCode)
+        console.log(qrCode)
     }
-})()
+}
+
+main()
