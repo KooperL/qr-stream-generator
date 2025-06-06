@@ -103,10 +103,11 @@
                 
                 const headerFrame = {
                     version: 1,
+                    frameNumber: 0,
                     totalFrames: totalFrames,
                     totalBytes: totalBytes,
                     filename: file.name,
-                    checksum: 123 //this.calculateChecksum(String.fromCharCode.apply(null, data))
+                    checksum: 'TODO' //this.calculateChecksum(String.fromCharCode.apply(null, data))
                 };
                 frames.push(headerFrame);
                 
