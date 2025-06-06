@@ -70,45 +70,117 @@
     </div>
     <script src="https://unpkg.com/jsqr@1.4.0/dist/jsQR.js"></script>
     <script>
+        // Core QR processing logic - browser agnostic
+        const QRProcessor = {
+            processedFrames: [],
+
+            async processFrame(frameData, frameIndex) {
+                const frameHash = await this.hashFrame(frameData);
+                const qrData = this.decodeQR(frameData);
+                
+                return {
+                    frameIndex,
+                    frameHash,
+                    qrData
+                };
+            },
+
+            async hashFrame(frameData) {
+                const hashBuffer = await crypto.subtle.digest('SHA-256', frameData);
+                const hashArray = Array.from(new Uint8Array(hashBuffer));
+                return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+            },
+
+            decodeQR(frameData) {
+                try {
+                    const code = jsQR(frameData.data, frameData.width, frameData.height);
+                    return code ? code.data : null;
+                } catch (error) {
+                    console.error('Error decoding QR:', error);
+                    return null;
+                }
+            }
+        };
+
+        // Browser-dependent video processing
+        const VideoProcessor = {
+            async createVideoElement(videoFile) {
+                const video = document.createElement('video');
+                video.src = URL.createObjectURL(videoFile);
+                return video;
+            },
+
+            createCanvas() {
+                const canvas = document.createElement('canvas');
+                canvas.width = 256;
+                canvas.height = 256;
+                return canvas;
+            },
+
+            getFrameData(video, canvas) {
+                const ctx = canvas.getContext('2d');
+                ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+                return ctx.getImageData(0, 0, canvas.width, canvas.height);
+            }
+        };
+
+        // UI handling
+        const UIHandler = {
+            showProgress() {
+                document.querySelector('.progress').style.display = 'block';
+            },
+
+            hideProgress() {
+                document.querySelector('.progress').style.display = 'none';
+            },
+
+            updateProgress(currentFrame) {
+                const progress = (currentFrame / 100) * 100;
+                document.querySelector('.progress-bar-fill').style.width = `${Math.min(progress, 100)}%`;
+                document.getElementById('progressText').textContent = `Processing: ${Math.round(Math.min(progress, 100))}%`;
+            },
+
+            showError(message) {
+                const errorMessage = document.getElementById('errorMessage');
+                errorMessage.textContent = message;
+                errorMessage.style.display = 'block';
+            },
+
+            hideError() {
+                const errorMessage = document.getElementById('errorMessage');
+                errorMessage.style.display = 'none';
+            }
+        };
+
+        // Main QR Scanner that coordinates between modules
         const QRScanner = {
-            frames: [],
-            headerFrame: null,
             isProcessing: false,
 
             async processVideo(videoFile) {
-                const video = document.createElement('video');
-                video.src = URL.createObjectURL(videoFile);
+                const video = await VideoProcessor.createVideoElement(videoFile);
+                const canvas = VideoProcessor.createCanvas();
+                const videoContainer = document.getElementById('videoContainer');
+                
                 videoContainer.innerHTML = '';
                 videoContainer.appendChild(video);
-
-                const canvas = document.createElement('canvas');
-                const ctx = canvas.getContext('2d');
-                canvas.width = 256;
-                canvas.height = 256;
 
                 return new Promise((resolve, reject) => {
                     video.onloadedmetadata = () => {
                         video.play();
                         this.isProcessing = true;
-                        this.showProgress();
+                        UIHandler.showProgress();
+                        let frameIndex = 0;
 
                         const processFrame = async () => {
                             if (!this.isProcessing) return;
 
-                            ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-                            const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-                            
                             try {
-                                const code = jsQR(imageData.data, imageData.width, imageData.height);
-                                if (code) {
-                                    const frame = JSON.parse(code.data);
-                                    if (frame.version === 1 && !this.headerFrame) {
-                                        this.headerFrame = frame;
-                                    } else if (frame.frameNumber) {
-                                        this.frames[frame.frameNumber - 1] = frame;
-                                    }
-                                    this.updateProgress();
-                                }
+                                const frameData = VideoProcessor.getFrameData(video, canvas);
+                                const processedFrame = await QRProcessor.processFrame(frameData, frameIndex);
+                                QRProcessor.processedFrames.push(processedFrame);
+                                
+                                UIHandler.updateProgress(frameIndex);
+                                frameIndex++;
                             } catch (error) {
                                 console.error('Error processing frame:', error);
                             }
@@ -117,8 +189,8 @@
                                 requestAnimationFrame(processFrame);
                             } else {
                                 this.isProcessing = false;
-                                this.hideProgress();
-                                resolve(this.reconstructFile());
+                                UIHandler.hideProgress();
+                                resolve(QRProcessor.processedFrames);
                             }
                         };
 
@@ -129,65 +201,19 @@
                         reject(new Error('Error loading video'));
                     };
                 });
-            },
-
-            async reconstructFile() {
-                if (!this.headerFrame || this.frames.length === 0) {
-                    throw new Error('No valid frames found');
-                }
-
-                const { filename, totalBytes } = this.headerFrame;
-                const chunks = [];
-
-                for (const frame of this.frames) {
-                    if (frame && frame.data) {
-                        const binaryString = atob(frame.data);
-                        const bytes = new Uint8Array(binaryString.length);
-                        for (let i = 0; i < binaryString.length; i++) {
-                            bytes[i] = binaryString.charCodeAt(i);
-                        }
-                        chunks.push(bytes);
-                    }
-                }
-
-                const blob = new Blob(chunks, { type: 'application/octet-stream' });
-                const url = URL.createObjectURL(blob);
-                
-                const a = document.createElement('a');
-                a.href = url;
-                a.download = filename;
-                a.click();
-                
-                URL.revokeObjectURL(url);
-                return blob;
-            },
-
-            showProgress() {
-                document.querySelector('.progress').style.display = 'block';
-            },
-
-            hideProgress() {
-                document.querySelector('.progress').style.display = 'none';
-            },
-
-            updateProgress() {
-                const progress = (this.frames.filter(f => f).length / this.headerFrame.totalFrames) * 100;
-                document.querySelector('.progress-bar-fill').style.width = `${progress}%`;
-                document.getElementById('progressText').textContent = `Processing: ${Math.round(progress)}%`;
             }
         };
 
         // Main application code
         const fileInput = document.getElementById('fileInput');
-        const errorMessage = document.getElementById('errorMessage');
 
         fileInput.addEventListener('change', async (event) => {
             const files = event.target.files;
             
-            errorMessage.style.display = 'none';
+            UIHandler.hideError();
             
             if (files.length > 1) {
-                errorMessage.style.display = 'block';
+                UIHandler.showError('Please select only one file.');
                 fileInput.value = '';
                 return;
             }
@@ -195,11 +221,11 @@
             const file = files[0];
             if (file) {
                 try {
-                    await QRScanner.processVideo(file);
+                    const processedFrames = await QRScanner.processVideo(file);
+                    console.log('Processed frames:', processedFrames);
                 } catch (error) {
                     console.error('Error processing video:', error);
-                    errorMessage.textContent = error.message;
-                    errorMessage.style.display = 'block';
+                    UIHandler.showError(error.message);
                 }
             }
         });
