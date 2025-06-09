@@ -58,10 +58,10 @@
             <input type="number" id="fps" value="5" min="1" max="30">
             <label for="correctionLevel">Error Correction:</label>
             <select id="correctionLevel">
-                <option value="L">Low (7%)</option>
+                <option value="L" selected>Low (7%)</option>
                 <option value="M">Medium (15%)</option>
                 <option value="Q">Quartile (25%)</option>
-                <option value="H" selected>High (30%)</option>
+                <option value="H">High (30%)</option>
             </select>
             <button id="generateVideo">Generate Video</button>
         </div>
@@ -83,7 +83,7 @@
 
             getChunkSize(correctionLevel) {
                 switch(correctionLevel) {
-                    case 'L': return 300;
+                    case 'L': return 500;
                     case 'M': return 250;
                     case 'Q': return 200;
                     case 'H': return 150;
@@ -104,9 +104,11 @@
                 const headerFrame = {
                     version: 1,
                     frameNumber: 0,
+                    fileType: file.type,
                     totalFrames: totalFrames,
                     totalBytes: totalBytes,
-                    filename: file.name,
+                    fileName: file.name,
+                    chunkSize: CHUNK_SIZE,
                     checksum: 'TODO' //this.calculateChecksum(String.fromCharCode.apply(null, data))
                 };
                 frames.push(headerFrame);

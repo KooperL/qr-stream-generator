@@ -69,32 +69,32 @@
         </div>
     </div>
     <script src="https://unpkg.com/jsqr@1.4.0/dist/jsQR.js"></script>
-    <script>
-        function base64ToArrayBuffer(base64) {
-            var binaryString = atob(base64);
-            var bytes = new Uint8Array(binaryString.length);
-            for (var i = 0; i < binaryString.length; i++) {
-                bytes[i] = binaryString.charCodeAt(i);
-            }
-            return bytes.buffer;
-        }
-
-
+    <script type="module">
+        import * as blurhash from 'https://cdn.jsdelivr.net/npm/blurhash@2.0.5/+esm'
         // Core QR processing logic - browser agnostic
         const QRProcessor = {
             processedFrames: {},
+            headerFrame: null,
 
             async processFrame(frameData, frameIndex) {
                 const frameHash = await this.hashFrame(frameData);
+
                 const qrData = this.decodeQR(frameData);
                 
                 return {
                     frameHash,
-                    qrData: JSON.stringify(qrData),
+                    qrData: JSON.parse(qrData),
                 };
             },
 
             async hashFrame(frameData) {
+                return blurhash.encode(
+                    frameData.data,
+                    frameData.height,
+                    frameData.width,
+                    4,
+                    4
+                )
                 // Convert ImageData to Uint8Array for hashing
                 const pixelData = new Uint8Array(frameData.data.buffer);
                 const hashBuffer = await crypto.subtle.digest('SHA-256', pixelData);
@@ -105,7 +105,6 @@
             decodeQR(frameData) {
                 try {
                     const code = jsQR(frameData.data, frameData.width, frameData.height);
-                    console.log('QR code:', code);
                     return code ? code.data : null;
                 } catch (error) {
                     console.error('Error decoding QR:', error);
@@ -119,35 +118,40 @@
                     .filter(frame => frame.qrData !== null)
                     .sort((a, b) => a.frameNumber - b.frameNumber);
 
+                console.log(sortedFrames, this.headerFrame)
                 if (sortedFrames.length === 0) {
                     throw new Error('No valid QR data found in frames');
                 }
 
                 // Join all QR data
                 let combinedData = new ArrayBuffer(this.headerFrame.totalBytes);
+                const combinedDataUint8Array = new Uint8Array(combinedData);
+                let trailingOffset = 0;
                 for (let i = 0; i < sortedFrames.length; i++) {
                     const frame = sortedFrames[i]
-                    const qrData = frame.qrData.data
-                    const arrayBuffer = base64ToArrayBuffer(qrData)
-                    const offset = this.headerFrame.totalBytes * i
-                    combinedData.set(arrayBuffer, offset)
+                    const qrData = frame.data
+                    const arrayBuffer = Uint8Array.fromBase64(qrData)
+                    combinedDataUint8Array.set(arrayBuffer, trailingOffset)
+                    trailingOffset += this.headerFrame.chunkSize
                 }
-                const combinedDataUint8Array = new Uint8Array(combinedData)
                 // const checksum = this.headerFrame.checksum
                 // const calculatedChecksum = this.calculateChecksum(combinedDataUint8Array)
                 // if (checksum !== calculatedChecksum) {
                 //     throw new Error('Checksum mismatch');
                 // }
 
-                const blob = new Blob([combinedDataUint8Array], { type: 'application/octet-stream' });
+                const blob = new Blob([combinedDataUint8Array], {
+                    type: this.headerFrame.fileType ?? 'application/octet-stream',
+
+                });
                 return blob;
             },
 
-            downloadFile(blob, filename = 'reconstructed_file') {
+            downloadFile(blob, filename) {
                 const url = URL.createObjectURL(blob);
                 const a = document.createElement('a');
                 a.href = url;
-                a.download = filename;
+                a.download = this.headerFrame.fileName;
                 a.click();
                 URL.revokeObjectURL(url);
             }
@@ -206,7 +210,6 @@
         // Main QR Scanner that coordinates between modules
         const QRScanner = {
             isProcessing: false,
-            headerFrame: null,
             async processVideo(videoFile) {
                 const video = await VideoProcessor.createVideoElement(videoFile);
                 const canvas = VideoProcessor.createCanvas();
@@ -224,17 +227,22 @@
 
                         const processFrame = async () => {
                             if (!this.isProcessing) return;
-
                             try {
                                 const frameData = VideoProcessor.getFrameData(video, canvas);
                                 const processedFrame = await QRProcessor.processFrame(frameData, frameIndex);
 
-                                if (processedFrame.qrData.frameNumber === 0) {
-                                    this.headerFrame = processedFrame;
-                                } else {
-                                    QRProcessor.processedFrames[processedFrame.frameHash] = processedFrame.qrData;
+                                if (processedFrame?.qrData) {
+                                    const isHeaderFrame = processedFrame.qrData.frameNumber === 0
+                                    if (isHeaderFrame) {
+                                        if (QRProcessor.headerFrame === null) {
+                                            QRProcessor.headerFrame = processedFrame.qrData;
+                                        }
+                                    } else {
+                                        if (!QRProcessor.processedFrames.hasOwnProperty(processedFrame.frameHash)) {
+                                            QRProcessor.processedFrames[processedFrame.frameHash] = processedFrame.qrData;
+                                        }
+                                    }
                                 }
-
                                 UIHandler.updateProgress(frameIndex);
                                 frameIndex++;
                             } catch (error) {
