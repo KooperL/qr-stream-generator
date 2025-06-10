@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>QR Scanner & Generator Suite</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: #f8f9fa;
+            margin: 0;
+            padding: 0;
+        }
+        .container {
+            max-width: 800px;
+            margin: 40px auto;
+            background: #fff;
+            border-radius: 12px;
+            box-shadow: 0 4px 24px rgba(0,0,0,0.08);
+            padding: 32px 24px;
+        }
+        h1 {
+            text-align: center;
+            color: #222;
+            margin-bottom: 12px;
+        }
+        .subtitle {
+            text-align: center;
+            color: #555;
+            margin-bottom: 32px;
+        }
+        .description {
+            font-size: 1.1em;
+            color: #333;
+            margin-bottom: 32px;
+            line-height: 1.7;
+        }
+        .features {
+            margin-bottom: 32px;
+        }
+        .features ul {
+            list-style: disc inside;
+            color: #444;
+        }
+        .links {
+            display: flex;
+            justify-content: center;
+            gap: 32px;
+            margin-top: 32px;
+        }
+        .card-link {
+            display: block;
+            background: #e3f2fd;
+            border-radius: 8px;
+            padding: 24px 32px;
+            text-align: center;
+            text-decoration: none;
+            color: #1976d2;
+            font-weight: bold;
+            font-size: 1.15em;
+            box-shadow: 0 2px 8px rgba(25, 118, 210, 0.08);
+            transition: background 0.2s, box-shadow 0.2s;
+        }
+        .card-link:hover {
+            background: #bbdefb;
+            box-shadow: 0 4px 16px rgba(25, 118, 210, 0.16);
+        }
+        @media (max-width: 600px) {
+            .container { padding: 16px 4px; }
+            .links { flex-direction: column; gap: 16px; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>QR Scanner & Generator Suite</h1>
+        <div class="subtitle">
+            Encode and decode files using QR code video streams — all in your browser.
+        </div>
+        <div class="description">
+            <strong>QR Scanner & Generator Suite</strong> is an open-source web project that demonstrates how to encode any file into a sequence of QR codes, generate a video from those codes, and later reconstruct the original file by scanning the QR codes from the video. This project showcases advanced browser-based file processing, QR encoding/decoding, and video manipulation — all without server-side processing.
+        </div>
+        <div class="features">
+            <strong>Key Features:</strong>
+            <ul>
+                <li><b>File to QR Video Generator:</b> Upload any file and convert it into a video of QR codes, with adjustable error correction and frame rate.</li>
+                <li><b>QR Video Scanner:</b> Upload a QR code video to reconstruct and download the original file, using robust frame-by-frame QR decoding.</li>
+                <li><b>Privacy-first:</b> All processing happens locally in your browser. No files are uploaded to any server.</li>
+                <li><b>Open & Extensible:</b> Built with modern JavaScript, open libraries, and modular code for easy customization.</li>
+            </ul>
+        </div>
+        <div class="links">
+            <a class="card-link" href="online-generator.html">
+                ➡️ QR Video Generator<br>
+                <span style="font-size:0.95em;font-weight:normal;">Encode a file into a QR code video</span>
+            </a>
+            <a class="card-link" href="online-scanner.html">
+                ⬅️ QR Video Scanner<br>
+                <span style="font-size:0.95em;font-weight:normal;">Decode a QR code video back to a file</span>
+            </a>
+        </div>
+        <div style="margin-top:40px; text-align:center; color:#888; font-size:0.95em;">
+            <em>Created for educational and experimental purposes.<br>
+            For large files, processing may take time and browser memory.</em>
+        </div>
+    </div>
+</body>
+</html>
