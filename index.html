@@ -78,16 +78,21 @@
             Encode and decode files using QR code video streams — all in your browser.
         </div>
         <div class="description">
-            <strong>QR Scanner & Generator Suite</strong> is an open-source web project that demonstrates how to encode any file into a sequence of QR codes, generate a video from those codes, and later reconstruct the original file by scanning the QR codes from the video. This project showcases advanced browser-based file processing, QR encoding/decoding, and video manipulation — all without server-side processing.
+            <strong>QR Scanner & Generator Suite</strong> is an open-source web project that demonstrates how to encode any file into a sequence of QR codes, generate a video from those codes, and later reconstruct the original file by scanning the QR codes from the video. This project showcases advanced browser-based file processing, QR encoding/decoding, and video manipulation — all <b>without any server-side processing</b>.
         </div>
         <div class="features">
             <strong>Key Features:</strong>
             <ul>
                 <li><b>File to QR Video Generator:</b> Upload any file and convert it into a video of QR codes, with adjustable error correction and frame rate.</li>
                 <li><b>QR Video Scanner:</b> Upload a QR code video to reconstruct and download the original file, using robust frame-by-frame QR decoding.</li>
-                <li><b>Privacy-first:</b> All processing happens locally in your browser. No files are uploaded to any server.</li>
+                <li><b>Privacy-first & Undetectable:</b> <span style="color:#1976d2;font-weight:bold;">All processing happens locally in your browser</span>. No files are uploaded or sent anywhere. This makes the process virtually undetectable by network monitoring tools.</li>
+                <li><b>Performance:</b> Typical speed is <span style="color:#1976d2;font-weight:bold;">2 seconds per 500 bytes</span> of file data (e.g., a 1KB file takes about 4 seconds to encode or decode).</li>
                 <li><b>Open & Extensible:</b> Built with modern JavaScript, open libraries, and modular code for easy customization.</li>
             </ul>
+        </div>
+        <div style="margin-bottom:24px; color:#c62828; font-size:1em; background:#fff3e0; border-radius:8px; padding:16px;">
+            <b>Important Notice:</b> This tool is for educational and experimental use only.<br>
+            <b>Do not use it to breach company data policies or transmit confidential information without proper authorization.</b>
         </div>
         <div class="links">
             <a class="card-link" href="online-generator.html">
@@ -98,10 +103,21 @@
                 ⬅️ QR Video Scanner<br>
                 <span style="font-size:0.95em;font-weight:normal;">Decode a QR code video back to a file</span>
             </a>
+            <a class="card-link" href="https://github.com/KooperL/qr-stream-generator" target="_blank" style="background:#222;color:#fff;">
+                <span style="font-size:1.2em;">&#128187; GitHub Repo</span><br>
+                <span style="font-size:0.95em;font-weight:normal;">View source & contribute</span>
+            </a>
         </div>
         <div style="margin-top:40px; text-align:center; color:#888; font-size:0.95em;">
-            <em>Created for educational and experimental purposes.<br>
-            For large files, processing may take time and browser memory.</em>
+            <em>
+                Created for educational and experimental purposes.<br>
+                For large files, processing may take time and browser memory.<br>
+                <br>
+                <b>Host Locally:</b><br>
+                1. <b>Clone or download</b> this repository.<br>
+                2. <b>Open the folder</b> on your computer.<br>
+                3. <b>Open <code>index.html</code> in your browser</b> (no server needed).<br>
+            </em>
         </div>
     </div>
 </body>
